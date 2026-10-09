@@ -3,6 +3,7 @@
 namespace App\Livewire\Project;
 
 use App\Models\Project;
+use App\Support\ProjectAccess;
 use App\Support\ValidationPatterns;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -39,8 +40,9 @@ class AddEmpty extends Component
                 'team_id' => currentTeam()->id,
                 'uuid' => new_public_id(),
             ]);
+            ProjectAccess::grantCreatedProject($project);
 
-            $productionEnvironment = $project->environments()->where('name', 'production')->first();
+            $productionEnvironment = $project->environments()->withoutGlobalScope('projectMembership')->where('name', 'production')->first();
 
             return redirect()->route('project.resource.index', [
                 'project_uuid' => $project->uuid,

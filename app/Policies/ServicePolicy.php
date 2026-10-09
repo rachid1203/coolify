@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Service;
 use App\Models\User;
+use App\Support\ProjectAccess;
 
 class ServicePolicy
 {
@@ -22,7 +23,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->teams->contains('id', $teamId);
+        return ProjectAccess::allowsView($user, $teamId, $service);
     }
 
     /**
@@ -30,7 +31,7 @@ class ServicePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**
@@ -40,7 +41,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $service);
     }
 
     /**
@@ -50,7 +51,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $service);
     }
 
     /**
@@ -76,7 +77,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $service);
     }
 
     /**
@@ -86,7 +87,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $service);
     }
 
     /**
@@ -96,7 +97,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $service);
     }
 
     /**
@@ -106,7 +107,7 @@ class ServicePolicy
     {
         $teamId = $this->getTeamId($service);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $service);
     }
 
     /**

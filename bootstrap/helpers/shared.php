@@ -602,7 +602,7 @@ function showBoarding(): bool
         return false;
     }
 
-    if (Auth::user()?->isMember()) {
+    if (Auth::user()?->isMember() || Auth::user()?->isProjectScoped()) {
         return false;
     }
 

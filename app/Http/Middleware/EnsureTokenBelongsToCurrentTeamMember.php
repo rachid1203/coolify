@@ -12,7 +12,7 @@ class EnsureTokenBelongsToCurrentTeamMember
     {
         $user = $request->user();
         $token = $user?->currentAccessToken();
-        $teamId = $token?->team_id;
+        $teamId = data_get($token, 'team_id');
 
         if (! $user || ! $token || is_null($teamId)) {
             return response()->json(['message' => 'Invalid token.'], 401);
@@ -23,7 +23,15 @@ class EnsureTokenBelongsToCurrentTeamMember
             ->first();
 
         if (! $team) {
-            return response()->json(['message' => 'Invalid token.'], 401);
+            if (! $user->hasProjectOnTeam((int) $teamId)) {
+                return response()->json(['message' => 'Invalid token.'], 401);
+            }
+
+            if ($token->can('root') || $token->can('write:sensitive')) {
+                return response()->json(['message' => 'Missing required team role.'], 403);
+            }
+
+            return $next($request);
         }
 
         $role = $team->pivot?->role;

@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Support\ProjectAccess;
 
 class ProjectPolicy
 {
@@ -20,7 +21,7 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        return $user->teams->contains('id', $project->team_id);
+        return ProjectAccess::allowsView($user, $project->team_id, $project);
     }
 
     /**
@@ -28,7 +29,17 @@ class ProjectPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($user->getKey() === null) {
+            return false;
+        }
+
+        $teamId = $user->currentTeam()?->id;
+
+        return $teamId !== null && $user->canCreateProjectsOnTeam((int) $teamId);
     }
 
     /**

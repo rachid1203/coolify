@@ -60,6 +60,7 @@ class CloneMe extends Component
     {
         $this->project_uuid = $project_uuid;
         $this->project = Project::ownedByCurrentTeam()->where('uuid', $project_uuid)->firstOrFail();
+        $this->authorize('update', $this->project);
         $this->environment = $this->project->environments->where('uuid', $this->environment_uuid)->first();
         $this->project_id = $this->project->id;
         $this->servers = Server::query()

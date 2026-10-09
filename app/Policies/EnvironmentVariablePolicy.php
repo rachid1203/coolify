@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\EnvironmentVariable;
 use App\Models\User;
+use App\Support\ProjectAccess;
 
 class EnvironmentVariablePolicy
 {
@@ -22,7 +23,7 @@ class EnvironmentVariablePolicy
     {
         $teamId = $this->getTeamId($environmentVariable);
 
-        return $teamId !== null && $user->teams->contains('id', $teamId);
+        return ProjectAccess::allowsView($user, $teamId, $environmentVariable);
     }
 
     /**
@@ -30,7 +31,7 @@ class EnvironmentVariablePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**
@@ -40,7 +41,7 @@ class EnvironmentVariablePolicy
     {
         $teamId = $this->getTeamId($environmentVariable);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $environmentVariable);
     }
 
     /**
@@ -50,7 +51,7 @@ class EnvironmentVariablePolicy
     {
         $teamId = $this->getTeamId($environmentVariable);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $environmentVariable);
     }
 
     /**
@@ -76,7 +77,7 @@ class EnvironmentVariablePolicy
     {
         $teamId = $this->getTeamId($environmentVariable);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $environmentVariable);
     }
 
     private function getTeamId(EnvironmentVariable $environmentVariable): ?int

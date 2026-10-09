@@ -9,6 +9,7 @@ use App\Models\PersonalAccessToken;
 use App\Models\Server;
 use App\Rules\SafeExternalUrl;
 use App\Support\AtomicFilesystem;
+use App\Support\ProjectAccess;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Console\ConfigCacheCommand;
 use Illuminate\Foundation\Console\RouteCacheCommand;
@@ -44,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureGitLabHttp();
         $this->configureOidcSocialite();
         $this->configureQueue();
+        ProjectAccess::register();
     }
 
     /**

@@ -29,11 +29,15 @@ function getTeamIdFromToken()
     $token = $user?->currentAccessToken();
     $teamId = data_get($token, 'team_id');
 
-    if (! $user || is_null($teamId) || ! $user->teams()->where('teams.id', $teamId)->exists()) {
+    if (! $user || is_null($teamId)) {
         return null;
     }
 
-    return $teamId;
+    if ($user->teams()->where('teams.id', $teamId)->exists() || $user->hasProjectOnTeam((int) $teamId)) {
+        return (int) $teamId;
+    }
+
+    return null;
 }
 function invalidTokenResponse()
 {

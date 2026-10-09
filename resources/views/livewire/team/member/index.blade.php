@@ -140,6 +140,9 @@
             <livewire:team.invite-link />
             <livewire:team.invitations :invitations="$invitations" />
         @endcan
+        @can('manageMembers', currentTeam())
+            <livewire:project.members />
+        @endcan
     </div>
     </x-team.settings-layout>
 </div>

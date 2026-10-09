@@ -21,7 +21,7 @@
                 class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-fg-faint">
                 Teams
             </div>
-            @foreach (auth()->user()->teams as $team)
+            @foreach (auth()->user()->switchableTeams() as $team)
                 <button type="button" wire:click="switch_to({{ $team->id }})" @click="open = false"
                     class="listbox-option {{ $team->id === $currentTeam->id ? 'bg-neutral-100 font-medium dark:bg-white/[0.06]' : '' }}">
                     <span class="min-w-0 flex-1 truncate">{{ $team->name }}</span>
@@ -65,7 +65,7 @@
                 class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-fg-faint">
                 Teams
             </div>
-            @foreach (auth()->user()->teams as $team)
+            @foreach (auth()->user()->switchableTeams() as $team)
                 <button type="button" wire:click="switch_to({{ $team->id }})" @click="teamOpen = false"
                     class="listbox-option {{ $team->id === $currentTeam->id ? 'bg-neutral-100 font-medium dark:bg-white/[0.06]' : '' }}">
                     <span class="min-w-0 flex-1 truncate">{{ $team->name }}</span>
