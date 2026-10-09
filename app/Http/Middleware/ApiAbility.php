@@ -26,7 +26,10 @@ class ApiAbility extends CheckForAnyAbility
 
             if ($teamId !== null && ! $request->user()->isAdminOfTeam((int) $teamId)) {
                 $tokenAbilities = $token->abilities ?? [];
-                $disallowed = array_intersect($tokenAbilities, self::MEMBER_DISALLOWED_ABILITIES);
+                $disallowedAbilities = $request->user()->hasProjectOnTeam((int) $teamId)
+                    ? ['root', 'write:sensitive']
+                    : self::MEMBER_DISALLOWED_ABILITIES;
+                $disallowed = array_intersect($tokenAbilities, $disallowedAbilities);
 
                 if (! empty($disallowed)) {
                     return response()->json([

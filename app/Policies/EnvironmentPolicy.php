@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Environment;
 use App\Models\User;
+use App\Support\ProjectAccess;
 
 class EnvironmentPolicy
 {
@@ -22,7 +23,7 @@ class EnvironmentPolicy
     {
         $teamId = $this->getTeamId($environment);
 
-        return $teamId !== null && $user->teams->contains('id', $teamId);
+        return ProjectAccess::allowsView($user, $teamId, $environment);
     }
 
     /**
@@ -30,7 +31,7 @@ class EnvironmentPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**
@@ -40,7 +41,7 @@ class EnvironmentPolicy
     {
         $teamId = $this->getTeamId($environment);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $environment);
     }
 
     /**
@@ -50,7 +51,7 @@ class EnvironmentPolicy
     {
         $teamId = $this->getTeamId($environment);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $environment);
     }
 
     /**

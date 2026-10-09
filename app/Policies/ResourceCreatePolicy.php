@@ -14,6 +14,7 @@ use App\Models\StandalonePostgresql;
 use App\Models\StandaloneRedis;
 use App\Models\StandaloneSqlite;
 use App\Models\User;
+use App\Support\ProjectAccess;
 
 class ResourceCreatePolicy
 {
@@ -40,7 +41,7 @@ class ResourceCreatePolicy
      */
     public function createAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**
@@ -52,7 +53,7 @@ class ResourceCreatePolicy
             return false;
         }
 
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**

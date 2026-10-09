@@ -8,6 +8,7 @@ use App\Notifications\Channels\SendsEmail;
 use App\Notifications\TransactionalEmails\EmailChangeVerification;
 use App\Notifications\TransactionalEmails\ResetPassword as TransactionalEmailsResetPassword;
 use App\Services\ChangelogService;
+use App\Support\ProjectAccess;
 use App\Traits\DeletesUserSessions;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,9 +17,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -286,6 +289,70 @@ class User extends Authenticatable implements SendsEmail
         return $this->belongsToMany(Team::class)->withPivot('role');
     }
 
+    public function projectMemberships()
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    public function projectMembershipProjectIds(): Collection
+    {
+        return ProjectAccess::projectIds($this);
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    public function projectTeamIds(): Collection
+    {
+        return ProjectAccess::teamIds($this);
+    }
+
+    public function hasAnyProjectMembership(): bool
+    {
+        return $this->projectMembershipProjectIds()->isNotEmpty();
+    }
+
+    public function hasProjectOnTeam(int $teamId): bool
+    {
+        return $this->projectTeamIds()->contains($teamId);
+    }
+
+    public function canCreateProjectsOnTeam(int $teamId): bool
+    {
+        if ($this->getKey() === null) {
+            return false;
+        }
+
+        return DB::table('project_members')
+            ->join('projects', 'projects.id', '=', 'project_members.project_id')
+            ->where('project_members.user_id', $this->id)
+            ->where('projects.team_id', $teamId)
+            ->where('project_members.can_create_projects', true)
+            ->exists();
+    }
+
+    public function isProjectScoped(): bool
+    {
+        $team = $this->currentTeam();
+        if ($team === null) {
+            return false;
+        }
+
+        return ! $this->teams->contains('id', $team->id) && $this->hasProjectOnTeam((int) $team->id);
+    }
+
+    public function switchableTeams()
+    {
+        $extra = $this->projectTeamIds()->isEmpty()
+            ? collect()
+            : Team::query()->whereIn('id', $this->projectTeamIds())->get();
+
+        return $this->teams->concat($extra)->unique('id')->sortBy('name')->values();
+    }
+
     public function changelogReads()
     {
         return $this->hasMany(UserChangelogRead::class);
@@ -395,8 +462,8 @@ class User extends Authenticatable implements SendsEmail
             return null;
         }
 
-        // Check if user actually belongs to this team
-        if (! $this->teams->contains('id', $sessionTeamId)) {
+        // Full team members and project-scoped members may activate this team.
+        if (! $this->teams->contains('id', $sessionTeamId) && ! $this->hasProjectOnTeam((int) $sessionTeamId)) {
             session()->forget('currentTeam');
             Cache::forget('user:'.$this->id.':team:'.$sessionTeamId);
 
@@ -424,10 +491,17 @@ class User extends Authenticatable implements SendsEmail
             if ($storedTeam) {
                 return $storedTeam;
             }
+            if ($this->hasProjectOnTeam((int) $this->current_team_id)) {
+                return Team::query()->find($this->current_team_id);
+            }
         }
 
-        if ($this->teams->count() === 1) {
+        if ($this->teams->count() === 1 && ! $this->hasAnyProjectMembership()) {
             return $this->teams->first();
+        }
+
+        if ($this->teams->count() === 1 && $this->projectTeamIds()->count() === 1 && $this->teams->first()->projects()->doesntExist()) {
+            return Team::query()->find($this->projectTeamIds()->first());
         }
 
         return null;

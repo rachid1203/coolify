@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Support\ProjectAccess;
 use Illuminate\Auth\Access\Response;
 
 class DatabasePolicy
@@ -22,7 +23,7 @@ class DatabasePolicy
     {
         $teamId = $this->getTeamId($database);
 
-        return $teamId !== null && $user->teams->contains('id', $teamId);
+        return ProjectAccess::allowsView($user, $teamId, $database);
     }
 
     /**
@@ -30,7 +31,7 @@ class DatabasePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**
@@ -44,7 +45,7 @@ class DatabasePolicy
             return Response::deny('Database team not found.');
         }
 
-        if ($user->isAdminOfTeam($teamId)) {
+        if (ProjectAccess::allowsManage($user, $teamId, $database)) {
             return Response::allow();
         }
 
@@ -58,7 +59,7 @@ class DatabasePolicy
     {
         $teamId = $this->getTeamId($database);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $database);
     }
 
     /**
@@ -84,7 +85,7 @@ class DatabasePolicy
     {
         $teamId = $this->getTeamId($database);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $database);
     }
 
     /**
@@ -98,7 +99,7 @@ class DatabasePolicy
             return Response::deny('Database team not found.');
         }
 
-        if ($user->isAdminOfTeam($teamId)) {
+        if (ProjectAccess::allowsManage($user, $teamId, $database)) {
             return Response::allow();
         }
 
@@ -112,7 +113,7 @@ class DatabasePolicy
     {
         $teamId = $this->getTeamId($database);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $database);
     }
 
     /**
@@ -122,7 +123,7 @@ class DatabasePolicy
     {
         $teamId = $this->getTeamId($database);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $database);
     }
 
     private function getTeamId($database): ?int

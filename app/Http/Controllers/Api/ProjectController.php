@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Support\ProjectAccess;
 use App\Support\ValidationPatterns;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -272,6 +273,7 @@ class ProjectController extends Controller
             'description' => $request->description,
             'team_id' => $teamId,
         ]);
+        ProjectAccess::grantCreatedProject($project);
 
         return response()->json([
             'uuid' => $project->uuid,

@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\IntegrationTokensController;
 use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\OtherController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectMembersController;
 use App\Http\Controllers\Api\ResourcesController;
 use App\Http\Controllers\Api\S3StoragesController;
 use App\Http\Controllers\Api\ScheduledTasksController;
@@ -64,7 +65,7 @@ Route::group([
     Route::post('/mcp/disable', [OtherController::class, 'disable_mcp']);
 });
 Route::group([
-    'middleware' => ['auth:sanctum', 'api.token.team', ApiAllowed::class, 'api.sensitive'],
+    'middleware' => ['auth:sanctum', 'api.token.team', ApiAllowed::class, 'api.sensitive', 'project.scope'],
     'prefix' => 'v1',
 ], function () {
 
@@ -103,6 +104,10 @@ Route::group([
     Route::get('/projects', [ProjectController::class, 'projects'])->middleware(['api.ability:read']);
     Route::get('/projects/{uuid}', [ProjectController::class, 'project_by_uuid'])->middleware(['api.ability:read']);
     Route::get('/projects/{uuid}/environments', [ProjectController::class, 'get_environments'])->middleware(['api.ability:read']);
+    Route::get('/projects/{uuid}/members', [ProjectMembersController::class, 'index'])->middleware(['api.ability:read']);
+    Route::post('/projects/{uuid}/members', [ProjectMembersController::class, 'store'])->middleware(['api.ability:write']);
+    Route::patch('/projects/{uuid}/members/{user_id}', [ProjectMembersController::class, 'update'])->middleware(['api.ability:write']);
+    Route::delete('/projects/{uuid}/members/{user_id}', [ProjectMembersController::class, 'destroy'])->middleware(['api.ability:write']);
     // Shared project/environment envs must be registered before the catch-all environment route.
     Route::get('/projects/{uuid}/envs', [SharedEnvironmentVariablesController::class, 'project_envs'])->middleware(['api.ability:read']);
     Route::post('/projects/{uuid}/envs', [SharedEnvironmentVariablesController::class, 'project_create_env'])->middleware(['api.ability:write']);

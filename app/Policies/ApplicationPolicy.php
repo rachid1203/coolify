@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Application;
 use App\Models\User;
+use App\Support\ProjectAccess;
 use Illuminate\Auth\Access\Response;
 
 class ApplicationPolicy
@@ -21,9 +22,7 @@ class ApplicationPolicy
      */
     public function view(User $user, Application $application): bool
     {
-        $teamId = $this->getTeamId($application);
-
-        return $teamId !== null && $user->teams->contains('id', $teamId);
+        return ProjectAccess::allowsView($user, $this->getTeamId($application), $application);
     }
 
     /**
@@ -31,7 +30,7 @@ class ApplicationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || ProjectAccess::canOperateInCurrentTeam($user);
     }
 
     /**
@@ -45,7 +44,7 @@ class ApplicationPolicy
             return Response::deny('Application team not found.');
         }
 
-        if ($user->isAdminOfTeam($teamId)) {
+        if (ProjectAccess::allowsManage($user, $teamId, $application)) {
             return Response::allow();
         }
 
@@ -59,7 +58,7 @@ class ApplicationPolicy
     {
         $teamId = $this->getTeamId($application);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $application);
     }
 
     /**
@@ -89,7 +88,7 @@ class ApplicationPolicy
             return Response::deny('Application team not found.');
         }
 
-        if ($user->isAdminOfTeam($teamId)) {
+        if (ProjectAccess::allowsManage($user, $teamId, $application)) {
             return Response::allow();
         }
 
@@ -103,7 +102,7 @@ class ApplicationPolicy
     {
         $teamId = $this->getTeamId($application);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $application);
     }
 
     /**
@@ -113,7 +112,7 @@ class ApplicationPolicy
     {
         $teamId = $this->getTeamId($application);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $application);
     }
 
     /**
@@ -123,7 +122,7 @@ class ApplicationPolicy
     {
         $teamId = $this->getTeamId($application);
 
-        return $teamId !== null && $user->isAdminOfTeam($teamId);
+        return ProjectAccess::allowsManage($user, $teamId, $application);
     }
 
     /**

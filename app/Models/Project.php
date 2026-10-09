@@ -95,6 +95,18 @@ class Project extends BaseModel
         return $this->belongsTo(Team::class);
     }
 
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'project_members')
+            ->withPivot(['id', 'can_create_projects'])
+            ->withTimestamps();
+    }
+
+    public function projectMemberships()
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
     public function services()
     {
         return $this->hasManyThrough(Service::class, Environment::class);

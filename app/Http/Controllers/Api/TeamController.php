@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Team;
+use App\Support\ProjectAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -17,6 +19,16 @@ class TeamController extends Controller
         ]);
 
         return serializeApiResponse($team);
+    }
+
+    private function teamFromToken(int $teamId): ?Team
+    {
+        $team = auth()->user()->teams->where('id', $teamId)->first();
+        if ($team === null && auth()->user()->hasProjectOnTeam($teamId)) {
+            $team = Team::query()->find($teamId);
+        }
+
+        return $team;
     }
 
     #[OA\Get(
@@ -57,7 +69,8 @@ class TeamController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        $teams = auth()->user()->teams->where('id', $teamId)->values();
+        $team = $this->teamFromToken((int) $teamId);
+        $teams = $team ? collect([$team]) : collect();
         $teams = $teams->map(function ($team) {
             return $this->removeSensitiveData($team);
         });
@@ -108,11 +121,13 @@ class TeamController extends Controller
         if ((int) $request->id !== (int) $teamId) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
-        $team = auth()->user()->teams->where('id', $teamId)->first();
+        $team = $this->teamFromToken((int) $teamId);
         if (is_null($team)) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
-        $this->authorize('view', $team);
+        if (auth()->user()->teams->contains('id', $team->id)) {
+            $this->authorize('view', $team);
+        }
         $team = $this->removeSensitiveData($team);
 
         return response()->json(
@@ -168,20 +183,16 @@ class TeamController extends Controller
         if ((int) $request->id !== (int) $teamId) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
-        $team = auth()->user()->teams->where('id', $teamId)->first();
+        $team = $this->teamFromToken((int) $teamId);
         if (is_null($team)) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
-        $this->authorize('view', $team);
-        $members = $team->members;
-        $members->makeHidden([
-            'pivot',
-            'email_change_code',
-            'email_change_code_expires_at',
-        ]);
+        if (auth()->user()->teams->contains('id', $team->id)) {
+            $this->authorize('view', $team);
+        }
 
         return response()->json(
-            serializeApiResponse($members),
+            serializeApiResponse(ProjectAccess::membersForApi($team)),
         );
     }
 
@@ -215,7 +226,7 @@ class TeamController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        $team = auth()->user()->teams->where('id', $teamId)->first();
+        $team = $this->teamFromToken((int) $teamId);
         if (is_null($team)) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
@@ -262,7 +273,7 @@ class TeamController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        $team = auth()->user()->teams->where('id', $teamId)->first();
+        $team = $this->teamFromToken((int) $teamId);
         if (is_null($team)) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
@@ -329,18 +340,13 @@ class TeamController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        $team = auth()->user()->teams->where('id', $teamId)->first();
+        $team = $this->teamFromToken((int) $teamId);
         if (is_null($team)) {
             return response()->json(['message' => 'Team not found.'], 404);
         }
-        $team->members->makeHidden([
-            'pivot',
-            'email_change_code',
-            'email_change_code_expires_at',
-        ]);
 
         return response()->json(
-            serializeApiResponse($team->members),
+            serializeApiResponse(ProjectAccess::membersForApi($team)),
         );
     }
 }
